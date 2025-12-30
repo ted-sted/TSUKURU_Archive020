@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "text:check": "node tests/text-snapshot-source.mjs",
-    "text:snapshot": "node tests/text-snapshot-source.mjs --update"
+    "text:snapshot": "node tests/text-snapshot-source.mjs --update",
+    "visual:shots": "node tools/visual-snapshots.mjs",
+    "ci:check": "npm run text:check && npm run visual:shots"
   },
   "repository": {
     "type": "git",
@@ -21,6 +23,7 @@
   },
   "homepage": "https://github.com/ted-sted/TSUKURU_Archive010#readme",
   "devDependencies": {
+    "http-server": "^14.1.1",
     "node-html-parser": "^7.0.1",
     "playwright": "^1.57.0"
   }
