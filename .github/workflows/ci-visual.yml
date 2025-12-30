@@ -5,6 +5,13 @@ on:
     branches: ["**"]
   pull_request:
 
+concurrency:
+  group: ci-visual-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -19,7 +26,6 @@ jobs:
 
       - run: npm ci
 
-      # PlaywrightをActions側で確実に動かす（deps込み）
       - run: npx playwright install --with-deps chromium
 
       - run: npm run text:check
@@ -29,3 +35,25 @@ jobs:
         with:
           name: screenshots
           path: artifacts/screenshots
+          if-no-files-found: error
+          retention-days: 14
+
+      # push のときだけ、最新スクショを公開ブランチへ配置
+      - name: Publish screenshots to ci-snapshots branch
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # orphan ブランチで常に最新のみ保持
+          git switch --orphan ci-snapshots
+          git rm -rf . >/dev/null 2>&1 || true
+
+          cp artifacts/screenshots/desktop.png ./desktop.png
+          cp artifacts/screenshots/mobile.png ./mobile.png
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > generated-at.txt
+
+          git add desktop.png mobile.png generated-at.txt
+          git commit -m "update snapshots $GITHUB_SHA" || true
+          git push -f origin ci-snapshots
