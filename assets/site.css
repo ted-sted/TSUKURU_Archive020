@@ -2740,8 +2740,88 @@ section#products .grid-products{
     gap: 1.6rem;
   }
 
-  section#products .grid-products > #california-roll{
+section#products .grid-products > #california-roll{
     grid-column: span 2;
     grid-row: span 2;
   }
+}
+
+/* =========================
+   V2: Panel content visibility + layering safety
+   (Fix: blank panels / hidden section content)
+   ========================= */
+
+:root{
+  /* overlap量を安全側に寄せる（必要なら後で微調整） */
+  --panel-overlap: clamp(18px, 4vw, 56px);
+  --panel-pad-y: clamp(24px, 5vw, 72px);
+  --panel-pad-x: clamp(14px, 3vw, 40px);
+
+  /* 文字色の最低保証（既存トークンがあればそちら優先でOK） */
+  --ink-safe: #13222c;
+}
+
+/* セクション自体を確実なスタッキングコンテキストに */
+section{
+  position: relative;
+  isolation: isolate;
+  min-height: auto !important;
+  padding: var(--panel-pad-y) var(--panel-pad-x);
+  color: var(--ink, var(--ink-safe));
+}
+
+/* 次セクションが上にせり上がる：重なり量を変数で制御 */
+section + section{
+  margin-top: calc(var(--panel-overlap) * -1);
+}
+
+/* モバイルは重なり浅くして破綻回避 */
+@media (max-width: 768px){
+  :root{ --panel-overlap: 18px; }
+}
+
+/* 疑似要素（紙面/ドゥードル）が本文を覆わないように必ず背面へ */
+section::before,
+section::after{
+  pointer-events: none;
+  z-index: 0 !important;
+}
+
+/* 本文コンテナを必ず前面へ（ここが最重要） */
+section > .container{
+  position: relative;
+  z-index: 2 !important;
+}
+
+/* 念のため、主要ブロックも前面へ（header/timeline/productsなど） */
+section .section-header,
+section .chart-layout,
+section .timeline,
+section .grid-products{
+  position: relative;
+  z-index: 2 !important;
+}
+
+/* 主要カード要素も前面保証（既存のhover/影はそのまま活きる） */
+.card,
+.timeline-item,
+.product-card{
+  position: relative;
+  z-index: 3;
+}
+
+/* もし何らかの理由で透明化されていた場合の保険（強すぎる場合は後で弱める） */
+.section-header,
+.timeline-item,
+.product-card,
+.card{
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 文字が背景と同化する事故の保険（リンク等） */
+section a,
+section h1, section h2, section h3,
+section p, section li, section small{
+  color: inherit;
 }
