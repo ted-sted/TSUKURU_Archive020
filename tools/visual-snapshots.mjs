@@ -16,10 +16,36 @@ function startServer() {
   return p;
 }
 
+async function warmScroll(page) {
+  // スクロール連動の表示/アニメを確実にトリガーする
+  const viewport = page.viewportSize() || { width: 1280, height: 720 };
+  const step = Math.max(240, Math.floor(viewport.height * 0.85));
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(250);
+
+  const maxY = await page.evaluate(() => Math.max(
+    document.body.scrollHeight,
+    document.documentElement.scrollHeight
+  ));
+
+  for (let y = 0; y < maxY; y += step) {
+    await page.evaluate((yy) => window.scrollTo(0, yy), y);
+    await page.waitForTimeout(180);
+  }
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(500);
+}
+
 async function shot(page, name, width, height) {
   await page.setViewportSize({ width, height });
   await page.goto(URL, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(1200); // アニメ/描画安定待ち（安全側）
+  await page.waitForLoadState("networkidle").catch(() => {});
+  await page.waitForTimeout(600);
+
+  await warmScroll(page);
+
   await page.screenshot({ path: path.join(OUT_DIR, name), fullPage: true });
 }
 
